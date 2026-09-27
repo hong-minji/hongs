@@ -77,19 +77,28 @@
   header.top h1 { font-size: 20px; margin: 0; letter-spacing: -0.02em; }
   header.top .date { color: var(--muted); font-size: 13px; }
 
-  /* 오늘 카드 */
-  .today-card {
-    background: var(--card); border-radius: 18px; padding: 16px;
+  /* 지금 우리 가족 */
+  .now-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 8px; }
+  .now-head h2 { margin: 0; font-size: 16px; }
+  .now-head span { font-size: 12px; color: var(--muted); }
+  .family {
+    background: var(--card); border-radius: 18px; overflow: hidden; margin-bottom: 18px;
     box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(0,0,0,.04);
-    margin-bottom: 14px;
   }
-  .today-card .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  .today-card .mom { display: flex; align-items: center; gap: 10px; }
-  .today-card .mom .big { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-  .today-card .time { margin-top: 4px; color: var(--muted); font-size: 14px; }
-  .today-card .next { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--muted); }
-  .today-card .next b { color: var(--ink); font-weight: 600; }
-  .today-card .who { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .member { display: flex; gap: 12px; padding: 14px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .member:last-child { border-bottom: 0; }
+  .avatar {
+    width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center;
+    color: #fff; font-weight: 700; font-size: 14px; letter-spacing: -0.03em;
+  }
+  .member .info { flex: 1; min-width: 0; }
+  .member .name { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .member .status { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-top: 1px; }
+  .member .sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .member .sub b { color: var(--ink); font-weight: 600; }
+  .member .hl { font-size: 13px; font-weight: 600; margin-top: 5px; }
+  .dday { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: var(--rest-bg); color: var(--ink); margin-left: 4px; }
+  .pill.sm { padding: 1px 7px; font-size: 11px; }
 
   .pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 600; }
   .pill.off { background: var(--off-bg); color: var(--off); }
@@ -182,7 +191,8 @@
     <div class="date" id="nowLabel"></div>
   </header>
 
-  <section class="today-card" id="todayCard"></section>
+  <div class="now-head"><h2>지금 우리 가족</h2><span id="nowTime"></span></div>
+  <section class="family" id="family"></section>
 
   <div class="month-nav">
     <button id="prev" aria-label="이전 달">‹</button>
@@ -238,29 +248,135 @@ const fmtDate = d => `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()
 const color = who => PEOPLE[who].color;
 const eventTitle = e => `${esc(e.title)}${e.time ? ` · ${esc(e.time)}` : ''}`;
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+// 지금 시각은 어디서 열어도 한국 시간 기준 (주소 뒤에 ?now=2026-10-01T15:00 붙이면 그 시각으로 미리보기)
+function seoulNow() {
+  const test = new URLSearchParams(location.search).get('now');
+  if (test) return test.replace('T', ' ');
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date()).map(x => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+}
+// 시각은 'YYYY-MM-DD HH:MM' 문자열로 다뤄서 그대로 크기 비교
+let now = seoulNow();
+let today = parse(now.slice(0, 10));
 let view = new Date(today.getFullYear(), today.getMonth(), 1);
 let selected = null;
 
-function renderToday() {
-  const s = momShift(today);
-  const sh = SHIFTS[s];
-  let nextOff = null;
-  for (let i = 1; i <= 14; i++) {
-    const d = addDays(today, i);
-    if (momShift(d) === 'off') { nextOff = d; break; }
-  }
-  const here = staysOn(today);
-  $('nowLabel').textContent = fmtDate(today);
-  $('todayCard').innerHTML = `
-    <div class="label">오늘 엄마는</div>
-    <div class="mom"><span class="pill ${s}">${sh.label}</span><span class="big">${s === 'off' ? '쉬는 날 🌿' : sh.label + ' 근무'}</span></div>
-    <div class="time">${sh.time}</div>
-    <div class="next">내일 <b>${SHIFTS[momShift(addDays(today, 1))].label}</b>${nextOff ? ` · 다음 휴무 <b>${fmtDate(nextOff)}</b>` : ''}</div>
-    ${here.length ? `<div class="who">${here.map(x => `<span class="pill person" style="color:${color(x.who)}">${esc(x.label)}</span>`).join('')}</div>` : ''}
-  `;
+const at = (d, t) => `${typeof d === 'string' ? d : key(d)} ${t}`;
+function relDay(dateStr) {
+  const diff = dayNum(parse(dateStr)) - dayNum(today);
+  if (diff === 0) return '오늘';
+  if (diff === 1) return '내일';
+  if (diff === 2) return '모레';
+  return fmtDate(parse(dateStr));
 }
+const dday = dateStr => {
+  const diff = dayNum(parse(dateStr)) - dayNum(today);
+  return diff >= 3 ? `<span class="dday">D-${diff}</span>` : '';
+};
+
+// 엄마 근무 시간대 목록 [시작, 끝, 근무종류]
+function momShiftsAround() {
+  const list = [];
+  for (let i = -1; i <= 14; i++) {
+    const d = addDays(today, i);
+    const s = momShift(d);
+    if (s === 'day') list.push([at(d, '09:00'), at(d, '18:00'), s]);
+    if (s === 'night') list.push([at(d, '18:00'), at(addDays(d, 1), '09:00'), s]);
+  }
+  return list;
+}
+
+function momStatus() {
+  const shifts = momShiftsAround();
+  const cur = shifts.find(([a, b]) => now >= a && now < b);
+  const todayShift = momShift(today);
+  if (cur) {
+    const [, end, s] = cur;
+    return {
+      status: `${SHIFTS[s].label} 근무 중 🏥`,
+      sub: `<b>${relDay(end.slice(0, 10))} ${end.slice(11)}</b> 퇴근`,
+      shift: todayShift,
+    };
+  }
+  const next = shifts.find(([a]) => a > now);
+  const endedToday = shifts.some(([, b]) => b.slice(0, 10) === key(today) && b <= now);
+  let status = '집에서 쉬는 중 🏠';
+  if (todayShift === 'off') status = '쉬는 날 🌿';
+  else if (todayShift === 'rest') status = '나이트 끝나고 쉬는 중 😴';
+  else if (endedToday) status = '퇴근하고 쉬는 중 🏠';
+  else if (next && next[0].slice(0, 10) === key(today)) status = '출근 전이에요';
+  return {
+    status,
+    sub: next ? `다음 출근 <b>${relDay(next[0].slice(0, 10))} ${next[0].slice(11)}</b> (${SHIFTS[next[2]].label})${dday(next[0].slice(0, 10))}` : '',
+    shift: todayShift,
+  };
+}
+
+function personStatus(who) {
+  const p = PEOPLE[who];
+  const mine = EVENTS.filter(e => e.who === who).sort(byTime);
+  const flying = mine.find(e => e.flight && now >= at(e.date, e.flight[0]) && now < at(e.date, e.flight[1]));
+  const stay = STAYS.find(s => s.who === who && now >= at(s.from, s.fromTime || '00:00') && now <= at(s.to, s.toTime || '23:59'));
+  const where = stay ? stay.where : p.home;
+  const status = flying ? '✈️ 비행 중' : `${PLACES[where] || '📍'} ${where}에 있어요`;
+
+  const lines = [];
+  if (flying) lines.push(`${esc(flying.title)} · <b>${flying.flight[1]}</b> 도착 예정`);
+  // 오늘 아직 안 지난 일정은 강조
+  const todays = mine.filter(e => e.date === key(today) && e !== flying && (!e.time || now < at(e.date, e.time)));
+  const upcoming = mine.find(e => e.date > key(today) || (e.date === key(today) && e.time && now < at(e.date, e.time)));
+  const nextEv = todays.length ? null : upcoming;
+  if (nextEv && nextEv !== flying) {
+    lines.push(`다음: <b>${relDay(nextEv.date)}${nextEv.time ? ' ' + nextEv.time : ''}</b> ${esc(nextEv.title)}${dday(nextEv.date)}`);
+  }
+  if (stay && !flying) lines.push(`${fmtDate(parse(stay.to))}까지 ${esc(stay.where)}`);
+  return { status, sub: lines.join('<br>'), hl: todays.map(e => `오늘 ${e.time ? e.time + ' ' : ''}${esc(e.title)}`) };
+}
+
+function renderNow() {
+  $('nowLabel').textContent = fmtDate(today);
+  $('nowTime').textContent = `한국 시간 ${now.slice(11)} 기준`;
+  const m = momStatus();
+  const rows = [`<div class="member">
+    <div class="avatar" style="background:var(--off)">엄마</div>
+    <div class="info">
+      <div class="name">엄마 <span class="pill sm ${m.shift}">오늘 ${SHIFTS[m.shift].label}</span></div>
+      <div class="status">${m.status}</div>
+      <div class="sub">${m.sub}</div>
+    </div>
+  </div>`];
+  for (const who of Object.keys(PEOPLE)) {
+    const p = PEOPLE[who];
+    const s = personStatus(who);
+    rows.push(`<div class="member">
+      <div class="avatar" style="background:${p.color}">${esc(p.name)}</div>
+      <div class="info">
+        <div class="name">${esc(p.name)}</div>
+        <div class="status">${s.status}</div>
+        ${s.hl.map(h => `<div class="hl" style="color:${p.color}">${h}</div>`).join('')}
+        ${s.sub ? `<div class="sub">${s.sub}</div>` : ''}
+      </div>
+    </div>`);
+  }
+  $('family').innerHTML = rows.join('');
+}
+
+// 1분마다, 그리고 앱으로 다시 돌아올 때 새로고침
+function tick() {
+  const n = seoulNow();
+  const dayChanged = n.slice(0, 10) !== now.slice(0, 10);
+  now = n;
+  if (dayChanged) {
+    today = parse(now.slice(0, 10));
+    renderMonth();
+    renderUpcoming();
+  }
+  renderNow();
+}
+setInterval(tick, 60000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
 
 function renderMonth() {
   const y = view.getFullYear(), m = view.getMonth();
@@ -350,7 +466,7 @@ cal.addEventListener('touchend', e => {
   sx = null;
 });
 
-renderToday();
+renderNow();
 renderMonth();
 renderLegend();
 renderUpcoming();
