@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fbf7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#17171a" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="홍씨네">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>홍씨네 캘린더</title>
+<style>
+  :root {
+    --bg: #fbf7f2;
+    --card: #ffffff;
+    --ink: #22201c;
+    --muted: #8a847b;
+    --line: #ece6dd;
+    --today: #22201c;
+    --sun: #d9534f;
+    --sat: #3b73c9;
+
+    /* 엄마 근무 */
+    --off: #e8883a;
+    --off-bg: #fdeede;
+    --day: #2f8fd6;
+    --day-bg: #e3f1fc;
+    --night: #5b4bc4;
+    --night-bg: #ebe8fb;
+    --rest: #9a948b;
+    --rest-bg: #f1eee9;
+
+    /* 가족 */
+    --jimin: #0f9d8a;
+    --minji: #e0527e;
+    --suntaek: #5a9e2f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171a;
+      --card: #222226;
+      --ink: #f1eee9;
+      --muted: #9b968e;
+      --line: #313136;
+      --today: #f1eee9;
+      --sun: #ef7773;
+      --sat: #74a4ee;
+      --off: #f29a52;
+      --off-bg: #3b2a1c;
+      --day: #5fb0ee;
+      --day-bg: #1c2e3d;
+      --night: #9a8cf2;
+      --night-bg: #28244a;
+      --rest: #a8a29a;
+      --rest-bg: #2c2b2a;
+      --jimin: #3cc4b0;
+      --minji: #f07ba0;
+      --suntaek: #86c75a;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+    font-size: 15px;
+    line-height: 1.4;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 16px 12px 40px; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 4px 4px 12px; }
+  header.top h1 { font-size: 20px; margin: 0; letter-spacing: -0.02em; }
+  header.top .date { color: var(--muted); font-size: 13px; }
+
+  /* 오늘 카드 */
+  .today-card {
+    background: var(--card); border-radius: 18px; padding: 16px;
+    box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(0,0,0,.04);
+    margin-bottom: 14px;
+  }
+  .today-card .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .today-card .mom { display: flex; align-items: center; gap: 10px; }
+  .today-card .mom .big { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .today-card .time { margin-top: 4px; color: var(--muted); font-size: 14px; }
+  .today-card .next { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--muted); }
+  .today-card .next b { color: var(--ink); font-weight: 600; }
+  .today-card .who { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; font-size: 13px; font-weight: 600; }
+  .pill.off { background: var(--off-bg); color: var(--off); }
+  .pill.day { background: var(--day-bg); color: var(--day); }
+  .pill.night { background: var(--night-bg); color: var(--night); }
+  .pill.rest { background: var(--rest-bg); color: var(--rest); }
+  .pill.person { background: transparent; border: 1.5px solid currentColor; }
+
+  /* 월 네비 */
+  .month-nav { display: flex; align-items: center; justify-content: space-between; margin: 6px 2px 8px; }
+  .month-nav h2 { margin: 0; font-size: 18px; letter-spacing: -0.02em; }
+  .month-nav button {
+    border: 0; background: var(--card); color: var(--ink); width: 40px; height: 40px; border-radius: 12px;
+    font-size: 18px; box-shadow: 0 1px 0 var(--line); cursor: pointer;
+  }
+  .month-nav .today-btn { width: auto; padding: 0 12px; font-size: 13px; font-weight: 600; margin-right: 6px; }
+
+  /* 달력 */
+  .cal { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(0,0,0,.04); }
+  .dow, .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .dow div { text-align: center; font-size: 12px; color: var(--muted); padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .dow div:first-child { color: var(--sun); }
+  .dow div:last-child { color: var(--sat); }
+  .cell {
+    min-height: 84px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 4px 3px 5px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; position: relative;
+    background: none; color: inherit; font: inherit; text-align: left; min-width: 0;
+  }
+  .cell:nth-child(7n) { border-right: 0; }
+  .cell.other { opacity: .35; }
+  .cell .num { font-size: 13px; font-weight: 600; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; }
+  .cell.sun .num { color: var(--sun); }
+  .cell.sat .num { color: var(--sat); }
+  .cell.is-today .num { background: var(--today); color: var(--bg); }
+  .cell.selected { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  .shift { font-size: 11px; font-weight: 700; border-radius: 5px; padding: 1px 0; text-align: center; letter-spacing: -0.02em; }
+  .shift.off { background: var(--off); color: #fff; }
+  .shift.day { background: var(--day-bg); color: var(--day); }
+  .shift.night { background: var(--night-bg); color: var(--night); }
+  .shift.rest { background: var(--rest-bg); color: var(--rest); }
+  .chip {
+    font-size: 10.5px; font-weight: 600; border-radius: 4px; padding: 1px 3px; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.03em;
+  }
+  .stays { position: absolute; left: 0; right: 0; bottom: 2px; display: flex; flex-direction: column; gap: 2px; }
+  .stay { height: 3px; }
+
+  /* 범례 */
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 12px 4px 4px; font-size: 12px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* 다가오는 일정 */
+  h3.sec { font-size: 15px; margin: 22px 4px 8px; }
+  .list { background: var(--card); border-radius: 18px; overflow: hidden; box-shadow: 0 1px 0 var(--line), 0 6px 20px rgba(0,0,0,.04); }
+  .item { display: flex; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); align-items: flex-start; }
+  .item:last-child { border-bottom: 0; }
+  .item .d { width: 46px; flex: none; text-align: center; }
+  .item .d .m { font-size: 11px; color: var(--muted); }
+  .item .d .n { font-size: 20px; font-weight: 700; line-height: 1.1; }
+  .item .d .w { font-size: 11px; color: var(--muted); }
+  .item .body { flex: 1; min-width: 0; }
+  .item .t { font-weight: 600; }
+  .item .s { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+  .empty { padding: 16px; color: var(--muted); font-size: 14px; }
+
+  /* 상세 시트 */
+  .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; max-width: 520px; margin: 0 auto;
+    background: var(--card); border-radius: 22px 22px 0 0; padding: 10px 18px calc(24px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .25s ease; max-height: 80vh; overflow: auto;
+  }
+  .sheet .grab { width: 38px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 12px; }
+  .sheet h4 { margin: 0 0 12px; font-size: 18px; }
+  .sheet .row { padding: 10px 0; border-top: 1px solid var(--line); }
+  .sheet .row .t { font-weight: 600; }
+  .sheet .row .s { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .open .sheet-bg { opacity: 1; pointer-events: auto; }
+  .open .sheet { transform: translateY(0); }
+
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>홍씨네 캘린더</h1>
+    <div class="date" id="nowLabel"></div>
+  </header>
+
+  <section class="today-card" id="todayCard"></section>
+
+  <div class="month-nav">
+    <button id="prev" aria-label="이전 달">‹</button>
+    <h2 id="monthTitle"></h2>
+    <div>
+      <button class="today-btn" id="goToday">오늘</button>
+      <button id="next" aria-label="다음 달">›</button>
+    </div>
+  </div>
+
+  <div class="cal">
+    <div class="dow"><div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+  <h3 class="sec">다가오는 가족 일정</h3>
+  <div class="list" id="upcoming"></div>
+
+  <footer>날짜를 누르면 자세히 볼 수 있어요 · 좌우로 밀면 달이 바뀌어요</footer>
+</div>
+
+<div id="sheetRoot">
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="grab"></div>
+    <h4 id="sheetTitle"></h4>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<script src="schedule.js"></script>
+<script>
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const pad = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const key = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const dayNum = d => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000;
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const $ = id => document.getElementById(id);
+
+const anchorNum = dayNum(parse(MOM.anchor));
+function momShift(d) {
+  const n = MOM.cycle.length;
+  return MOM.cycle[((dayNum(d) - anchorNum) % n + n) % n];
+}
+const byTime = (a, b) => (a.date + (a.time || '99')).localeCompare(b.date + (b.time || '99'));
+const eventsOn = d => EVENTS.filter(e => e.date === key(d)).sort(byTime);
+const staysOn = d => STAYS.filter(s => key(d) >= s.from && key(d) <= s.to);
+const fmtDate = d => `${d.getMonth() + 1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`;
+const color = who => PEOPLE[who].color;
+const eventTitle = e => `${esc(e.title)}${e.time ? ` · ${esc(e.time)}` : ''}`;
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+let view = new Date(today.getFullYear(), today.getMonth(), 1);
+let selected = null;
+
+function renderToday() {
+  const s = momShift(today);
+  const sh = SHIFTS[s];
+  let nextOff = null;
+  for (let i = 1; i <= 14; i++) {
+    const d = addDays(today, i);
+    if (momShift(d) === 'off') { nextOff = d; break; }
+  }
+  const here = staysOn(today);
+  $('nowLabel').textContent = fmtDate(today);
+  $('todayCard').innerHTML = `
+    <div class="label">오늘 엄마는</div>
+    <div class="mom"><span class="pill ${s}">${sh.label}</span><span class="big">${s === 'off' ? '쉬는 날 🌿' : sh.label + ' 근무'}</span></div>
+    <div class="time">${sh.time}</div>
+    <div class="next">내일 <b>${SHIFTS[momShift(addDays(today, 1))].label}</b>${nextOff ? ` · 다음 휴무 <b>${fmtDate(nextOff)}</b>` : ''}</div>
+    ${here.length ? `<div class="who">${here.map(x => `<span class="pill person" style="color:${color(x.who)}">${esc(x.label)}</span>`).join('')}</div>` : ''}
+  `;
+}
+
+function renderMonth() {
+  const y = view.getFullYear(), m = view.getMonth();
+  $('monthTitle').textContent = `${y}년 ${m + 1}월`;
+  const start = addDays(view, -view.getDay());
+  const last = new Date(y, m + 1, 0);
+  const end = addDays(last, 6 - last.getDay());
+  let html = '';
+  for (let d = start; d <= end; d = addDays(d, 1)) {
+    const s = momShift(d);
+    const st = staysOn(d);
+    const cls = ['cell'];
+    if (d.getMonth() !== m) cls.push('other');
+    if (d.getDay() === 0) cls.push('sun');
+    if (d.getDay() === 6) cls.push('sat');
+    if (+d === +today) cls.push('is-today');
+    if (selected && +d === +selected) cls.push('selected');
+    html += `<button class="${cls.join(' ')}" data-date="${key(d)}" style="padding-bottom:${5 + st.length * 5}px">
+      <span class="num">${d.getDate()}</span>
+      <span class="shift ${s}">${SHIFTS[s].label}</span>
+      ${eventsOn(d).map(e => `<span class="chip" style="background:${color(e.who)}">${esc(e.short || e.title)}</span>`).join('')}
+      <span class="stays">${st.map(x => `<span class="stay" style="background:${color(x.who)}"></span>`).join('')}</span>
+    </button>`;
+  }
+  $('grid').innerHTML = html;
+}
+
+function renderLegend() {
+  const shifts = Object.entries(SHIFTS).map(([k, v]) => `<span><i style="background:var(--${k})"></i>엄마 ${v.label}</span>`);
+  const people = Object.values(PEOPLE).map(p => `<span><i style="background:${p.color}"></i>${esc(p.name)}</span>`);
+  $('legend').innerHTML = shifts.concat(people).join('');
+}
+
+function renderUpcoming() {
+  const up = EVENTS.filter(e => e.date >= key(today)).sort(byTime);
+  if (!up.length) { $('upcoming').innerHTML = '<div class="empty">예정된 일정이 없어요</div>'; return; }
+  $('upcoming').innerHTML = up.map(e => {
+    const d = parse(e.date);
+    const s = momShift(d);
+    return `<div class="item">
+      <div class="d"><div class="m">${d.getMonth() + 1}월</div><div class="n">${d.getDate()}</div><div class="w">${DOW[d.getDay()]}</div></div>
+      <div class="body">
+        <div class="t"><span class="dot" style="background:${color(e.who)}"></span>${eventTitle(e)}</div>
+        ${e.note ? `<div class="s">${esc(e.note)}</div>` : ''}
+        <div class="s">엄마: ${SHIFTS[s].label}${s === 'off' ? '' : ` (${SHIFTS[s].time})`}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openSheet(d) {
+  selected = d;
+  renderMonth();
+  const s = momShift(d);
+  $('sheetTitle').textContent = fmtDate(d);
+  $('sheetBody').innerHTML = `
+    <div class="row"><div class="t"><span class="pill ${s}">${SHIFTS[s].label}</span> 엄마</div><div class="s">${SHIFTS[s].time}</div></div>
+    ${eventsOn(d).map(e => `<div class="row"><div class="t"><span class="dot" style="background:${color(e.who)}"></span>${eventTitle(e)}</div>${e.note ? `<div class="s">${esc(e.note)}</div>` : ''}</div>`).join('')}
+    ${staysOn(d).map(x => `<div class="row"><div class="t"><span class="dot" style="background:${color(x.who)}"></span>${esc(x.label)}</div><div class="s">${fmtDate(parse(x.from))} ~ ${fmtDate(parse(x.to))}</div></div>`).join('')}
+  `;
+  $('sheetRoot').classList.add('open');
+}
+function closeSheet() {
+  $('sheetRoot').classList.remove('open');
+  selected = null;
+  renderMonth();
+}
+
+const shiftMonth = n => { view = new Date(view.getFullYear(), view.getMonth() + n, 1); renderMonth(); };
+$('grid').addEventListener('click', e => {
+  const c = e.target.closest('.cell');
+  if (c) openSheet(parse(c.dataset.date));
+});
+$('sheetBg').addEventListener('click', closeSheet);
+$('prev').onclick = () => shiftMonth(-1);
+$('next').onclick = () => shiftMonth(1);
+$('goToday').onclick = () => { view = new Date(today.getFullYear(), today.getMonth(), 1); renderMonth(); };
+
+// 좌우 스와이프로 달 넘기기
+let sx = null, sy = null;
+const cal = document.querySelector('.cal');
+cal.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+cal.addEventListener('touchend', e => {
+  if (sx === null) return;
+  const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) shiftMonth(dx < 0 ? 1 : -1);
+  sx = null;
+});
+
+renderToday();
+renderMonth();
+renderLegend();
+renderUpcoming();
+</script>
+</body>
+</html>
