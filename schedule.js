@@ -10,6 +10,11 @@ const MOM = {
   cycle: ['off', 'day', 'day', 'night', 'night', 'rest'],
 };
 
+// 주기와 다른 날 (연차, 근무 바꾼 날 등) — 이 날만 바뀌고 주기는 그대로 이어져요
+const MOM_CHANGES = {
+  '2026-10-06': { shift: 'off', label: '연차' },
+};
+
 const SHIFTS = {
   off:   { label: '휴무',   time: '쉬는 날' },
   day:   { label: '데이',   time: '09:00 출근 · 18:00 퇴근' },

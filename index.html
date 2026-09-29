@@ -238,9 +238,12 @@ const $ = id => document.getElementById(id);
 
 const anchorNum = dayNum(parse(MOM.anchor));
 function momShift(d) {
+  const change = MOM_CHANGES[key(d)];
+  if (change) return change.shift;
   const n = MOM.cycle.length;
   return MOM.cycle[((dayNum(d) - anchorNum) % n + n) % n];
 }
+const momLabel = d => MOM_CHANGES[key(d)]?.label || SHIFTS[momShift(d)].label;
 const byTime = (a, b) => (a.date + (a.time || '99')).localeCompare(b.date + (b.time || '99'));
 const eventsOn = d => EVENTS.filter(e => e.date === key(d)).sort(byTime);
 const staysOn = d => STAYS.filter(s => key(d) >= s.from && key(d) <= s.to);
@@ -342,7 +345,7 @@ function renderNow() {
   const rows = [`<div class="member">
     <div class="avatar" style="background:var(--off)">엄마</div>
     <div class="info">
-      <div class="name">엄마 <span class="pill sm ${m.shift}">오늘 ${SHIFTS[m.shift].label}</span></div>
+      <div class="name">엄마 <span class="pill sm ${m.shift}">오늘 ${momLabel(today)}</span></div>
       <div class="status">${m.status}</div>
       <div class="sub">${m.sub}</div>
     </div>
@@ -396,7 +399,7 @@ function renderMonth() {
     if (selected && +d === +selected) cls.push('selected');
     html += `<button class="${cls.join(' ')}" data-date="${key(d)}" style="padding-bottom:${5 + st.length * 5}px">
       <span class="num">${d.getDate()}</span>
-      <span class="shift ${s}">${SHIFTS[s].label}</span>
+      <span class="shift ${s}">${momLabel(d)}</span>
       ${eventsOn(d).map(e => `<span class="chip" style="background:${color(e.who)}">${esc(e.short || e.title)}</span>`).join('')}
       <span class="stays">${st.map(x => `<span class="stay" style="background:${color(x.who)}"></span>`).join('')}</span>
     </button>`;
@@ -421,7 +424,7 @@ function renderUpcoming() {
       <div class="body">
         <div class="t"><span class="dot" style="background:${color(e.who)}"></span>${eventTitle(e)}</div>
         ${e.note ? `<div class="s">${esc(e.note)}</div>` : ''}
-        <div class="s">엄마: ${SHIFTS[s].label}${s === 'off' ? '' : ` (${SHIFTS[s].time})`}</div>
+        <div class="s">엄마: ${momLabel(d)}${s === 'off' ? '' : ` (${SHIFTS[s].time})`}</div>
       </div>
     </div>`;
   }).join('');
@@ -433,7 +436,7 @@ function openSheet(d) {
   const s = momShift(d);
   $('sheetTitle').textContent = fmtDate(d);
   $('sheetBody').innerHTML = `
-    <div class="row"><div class="t"><span class="pill ${s}">${SHIFTS[s].label}</span> 엄마</div><div class="s">${SHIFTS[s].time}</div></div>
+    <div class="row"><div class="t"><span class="pill ${s}">${momLabel(d)}</span> 엄마</div><div class="s">${SHIFTS[s].time}</div></div>
     ${eventsOn(d).map(e => `<div class="row"><div class="t"><span class="dot" style="background:${color(e.who)}"></span>${eventTitle(e)}</div>${e.note ? `<div class="s">${esc(e.note)}</div>` : ''}</div>`).join('')}
     ${staysOn(d).map(x => `<div class="row"><div class="t"><span class="dot" style="background:${color(x.who)}"></span>${esc(x.label)}</div><div class="s">${fmtDate(parse(x.from))} ~ ${fmtDate(parse(x.to))}</div></div>`).join('')}
   `;
