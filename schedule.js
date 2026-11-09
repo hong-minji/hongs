@@ -44,6 +44,12 @@ const EVENTS = [
   { date: '2026-10-12', who: 'suntaek', title: '순택 출국', short: '출국', time: '08:50', flight: ['08:50', '12:30'],
     note: '대한항공 KE867 · 인천 T2 08:50 출발 → 광저우 11:30 도착' },
   { date: '2026-10-14', who: 'minji',   title: '민지 귀국', short: '귀국' },
+  { date: '2026-12-25', who: 'minji',   title: '민지 광저우 출국', short: '출국', time: '07:55', flight: ['07:55', '12:10'],
+    note: '아시아나 OZ0369 · 인천 T2 07:55 출발 → 광저우 T2 11:10 도착 (현지시각)' },
+  { date: '2026-12-27', who: 'minji',   title: '민지 쿤밍 이동', short: '쿤밍', time: '12:20', flight: ['12:20', '14:55'],
+    note: '중국동방항공 MU5732 · 광저우 T3 11:20 출발 → 쿤밍 13:55 도착 (현지시각)' },
+  { date: '2026-12-27', who: 'minji',   title: '민지 귀국', short: '귀국', time: '22:45', flight: ['18:45', '22:45'],
+    note: '중국동방항공 MU2003 · 쿤밍 17:45 출발 (현지시각) → 인천 T1 22:45 도착' },
 ];
 
 // 기간: 이 동안 where 에 있어요 (달력 칸 아래 얇은 색 선으로 표시)
@@ -52,4 +58,5 @@ const STAYS = [
   { who: 'suntaek', where: '한국', from: '2026-10-01', fromTime: '17:15', to: '2026-10-12', toTime: '08:50', label: '순택 한국 체류' },
   { who: 'jimin',   where: '한국', from: '2026-10-03', to: '2026-10-04', label: '지민 한국 체류' },
   { who: 'minji',   where: '일본', from: '2026-10-05', to: '2026-10-14', label: '민지 일본 여행' },
+  { who: 'minji',   where: '중국', from: '2026-12-25', fromTime: '12:10', to: '2026-12-27', toTime: '18:45', label: '민지 중국 여행 (광저우·쿤밍)' },
 ];
